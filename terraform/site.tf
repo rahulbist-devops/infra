@@ -1,10 +1,3 @@
-
-provider "aws" {
-  access_key = "AKIAJXDCLVPYNPNGAR7A" 
-  secret_key = "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"
-  region     = "us-west-2"
-}
-
 module "vpc" {
   source = "./modules/vpc"
   cidr_block = "${var.cidr_block}"
