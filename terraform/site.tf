@@ -5,35 +5,41 @@ module "vpc" {
 }
 
 module "subnet_pub" {
-  source = "./modules/subnet"
+  source = "./modules/subnet-pub"
   subnet-ip = "${var.subnet_pub}"
   vpc-id = "${module.vpc.vpc-id}"
   subnet-name = "subent_pub"
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = "${module.natgw.natgw-id}"
 }
 
 module "subnet_priv" {
-  source = "./modules/subnet"
+  source = "./modules/subnet-priv"
   subnet-ip = "${var.subnet_priv}"
   vpc-id = "${module.vpc.vpc-id}"
   subnet-name = "subent_priv"
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id = "${module.vpc.igw-id}"
 }
 
 module "natgw" {
   source = "./modules/natgw"
   allocation_id = "${module.natgw.eip_allocation_id}"
-  subnet_id = "${module.subnet_pub.subnet-id}"
+  subnet_id = "${module.subnet_priv.subnet-id}"
 }
 
 module "security-group-pub" {
   source = "./modules/security-group"
   security-group-name = "SG-pub"
   vpc-id = "${module.vpc.vpc-id}"
+  cidr = "${var.cidr_block}"
 }
 
 module "security-group-priv" {
   source = "./modules/security-group"
   security-group-name = "SG-priv"
   vpc-id = "${module.vpc.vpc-id}"
+  cidr = "${var.cidr_block}"
 }
 
 module "instance-pub" {
@@ -45,13 +51,12 @@ module "instance-pub" {
   instance-key-name = "${var.key_name_pub}"
   security-groups = ["${module.security-group-pub.security-group-id}"]
   userdata = <<EOF
-             #! /bin/bash
-             wget -q -O - https://pkg.jenkins.io/debian/jenkins-ci.org.key | sudo apt-key add -
-             echo deb https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list   
-             sudo apt-get update
-             sudo apt-get install jenkins
-             sudo systemctl start jenkins
-             sudo apt-get install python -y
+             #!/bin/bash
+             sudo add-apt-repository ppa:webupd8team/java -y
+             sudo apt install oracle-java8-installer -y
+             wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+             sudo apt-add-repository "deb https://pkg.jenkins.io/debian-stable binary/"
+             sudo apt install jenkins -y
              sudo apt-get install ansible -y
              EOF
   associate-public-ip-address = true
@@ -65,7 +70,7 @@ module "instance-priv" {
   instance-name = "private-instance"
   instance-key-name = "${var.key_name_priv}"
   security-groups = ["${module.security-group-priv.security-group-id}"]
-  associate-public-ip-address = false
+  associate-public-ip-address = true
 }
 
 
