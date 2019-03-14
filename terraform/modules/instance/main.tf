@@ -2,7 +2,6 @@ resource "aws_instance" "host" {
   ami = "${var.host-ami}"
   instance_type = "${var.instance_type}"
   subnet_id = "${var.subnet-id}"
-
   associate_public_ip_address = "${var.associate-public-ip-address}"
   key_name = "${var.instance-key-name}"
   vpc_security_group_ids = ["${var.security-groups}"]
